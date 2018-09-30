@@ -4,30 +4,24 @@ import sys
 from workflow import Workflow, ICON_WEB, web
 
 
-class HackerNews:
-    def __init__(self):
-        # please read: https://github.com/tastejs/hacker-news-pwas/blob/master/docs/api.md
-        self.base_url = 'https://api.hnpwa.com/v0/{name}/{page}.json'
-        self.max_pages = 15
+def get_top_news():
+    base_url = 'https://api.hnpwa.com/v0/{name}/{page}.json'
+    max_pages = 15
+    name = 'news'
+    result = []
+    for page in range(1, max_pages):
+        url = base_url.format(name=name, page=page)
+        req = web.get(url)
+        req.raise_for_status()
 
-    def web_get(self, name):
-        result = []
-        for page in range(1, self.max_pages):
-            url = self.base_url.format(name=name, page=page)
-            req = web.get(url)
-            req.raise_for_status()
-
-            if len(req.json()) == 0:
-                break
-            result = result + req.json()
-        return result
+        if len(req.json()) == 0:
+            break
+        result = result + req.json()
+    return result
 
 
 def main(wf):
-
-    hn = HackerNews()
-    posts = hn.web_get('news')
-    # print(posts)
+    posts = wf.cached_data('posts', get_top_news, max_age=60*60)
 
     # Loop through the returned posts and add an item for each to
     # the list of results for Alfred
