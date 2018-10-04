@@ -34,20 +34,15 @@ def multi_get_top_news():
     max_pages = 15
     name = 'news'
     urls = [base_url.format(name=name, page=i) for i in range(1, max_pages)]
-    pool = ThreadPool(8)
+    pool = ThreadPool(max_pages)
     results = pool.map(req_hn_api, urls)
-    print(results)
     pool.close()
     pool.join()
     return results
 
 
-
-
 def main(wf):
-    # posts = wf.cached_data('posts', get_top_news, max_age=60*60)
-
-    posts = wf.cached_data('posts', multi_get_top_news, max_age=1)
+    posts = wf.cached_data('posts', multi_get_top_news, max_age=60*30)
     posts = reduce(lambda x, y: x + y, posts)
     # Loop through the returned posts and add an item for each to
     # the list of results for Alfred
