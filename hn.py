@@ -1,7 +1,9 @@
 # encoding: utf-8
 
 import sys
+from functools import reduce
 from workflow import Workflow, ICON_WEB, web
+from multiprocessing.dummy import Pool as ThreadPool
 
 
 def get_top_news():
@@ -20,9 +22,33 @@ def get_top_news():
     return result
 
 
-def main(wf):
-    posts = wf.cached_data('posts', get_top_news, max_age=60*60)
+def req_hn_api(url):
+    req = web.get(url)
+    req.raise_for_status()
+    req_json = req.json()
+    return req_json
 
+
+def multi_get_top_news():
+    base_url = 'https://api.hnpwa.com/v0/{name}/{page}.json'
+    max_pages = 15
+    name = 'news'
+    urls = [base_url.format(name=name, page=i) for i in range(1, max_pages)]
+    pool = ThreadPool(8)
+    results = pool.map(req_hn_api, urls)
+    print(results)
+    pool.close()
+    pool.join()
+    return results
+
+
+
+
+def main(wf):
+    # posts = wf.cached_data('posts', get_top_news, max_age=60*60)
+
+    posts = wf.cached_data('posts', multi_get_top_news, max_age=1)
+    posts = reduce(lambda x, y: x + y, posts)
     # Loop through the returned posts and add an item for each to
     # the list of results for Alfred
     for post in posts:
